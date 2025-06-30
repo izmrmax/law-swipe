@@ -18,7 +18,7 @@ export async function getMatches(filters) {
   }
 
   try {
-    const rankResponse = await aiClient.post('/matches/rank', { lawyers: profiles, filters })
+    const rankResponse = await aiClient.post('/matches/rank', { lawyers: profiles, filters, model: 'gemini-2.5-pro' })
     const ranking = Array.isArray(rankResponse.data.ranking) ? rankResponse.data.ranking : []
     const profileMap = new Map(profiles.map(p => [p.id, p]))
     const ranked = ranking.map(id => profileMap.get(id)).filter(Boolean)

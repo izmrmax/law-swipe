@@ -5,6 +5,7 @@
   "description": "Mobile-first progressive web app connecting clients with vetted attorneys via swipe interface",
   "scripts": {
     "start": "react-scripts start",
+    "start:dev": "concurrently \"npm start\" \"json-server --watch db.json --port 3001\"",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
@@ -12,20 +13,27 @@
     "format": "prettier --write \"src/**/*.{js,jsx,css,md,json}\""
   },
   "dependencies": {
+    "@react-spring/web": "^9.7.5",
     "axios": "^1.4.0",
+    "concurrently": "^9.2.0",
+    "json-server": "^1.0.0-beta.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.0",
-    "react-tinder-card": "^1.4.0",
+    "react-tinder-card": "^1.6.4",
     "web-vitals": "^3.3.1"
   },
   "devDependencies": {
     "eslint": "^8.44.0",
-    "eslint-config-react-app": "^7.0.2",
-    "prettier": "^3.0.0"
+    "eslint-config-react-app": "^7.0.1",
+    "prettier": "^3.0.0",
+    "react-scripts": "^5.0.1"
   },
   "eslintConfig": {
-    "extends": ["react-app", "react-app/jest"]
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "prettier": {
     "singleQuote": true,
@@ -33,7 +41,15 @@
     "printWidth": 80
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

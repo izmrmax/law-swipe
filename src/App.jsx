@@ -1,11 +1,10 @@
 import React, { useState, useEffect, createContext, useContext } from 'react'
 import axios from 'axios'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import TinderCard from 'react-tinder-card'
-import Onboarding from './Onboarding'
-import Profile from './Profile'
-import Chat from './Chat'
-import Settings from './Settings'
+import Onboarding from './pages/Onboarding'
+import Profile from './pages/Profile'
+import Chat from './pages/Chat'
+import Settings from './pages/Settings'
 
 export const AppContext = createContext()
 
@@ -73,37 +72,33 @@ function App() {
 
   if (!user) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/*" element={<Onboarding />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/*" element={<Onboarding />} />
+      </Routes>
     )
   }
 
   return (
     <AppContext.Provider value={contextValue}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/swipe" replace />} />
-          <Route
-            path="/swipe"
-            element={
-              <SwipeView
-                attorneys={attorneys}
-                index={swipeIndex}
-                onSwipe={handleSwipe}
-                loading={loading}
-              />
-            }
-          />
-          <Route path="/matches" element={<MatchesView />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/swipe" replace />} />
+        <Route
+          path="/swipe"
+          element={
+            <SwipeView
+              attorneys={attorneys}
+              index={swipeIndex}
+              onSwipe={handleSwipe}
+              loading={loading}
+            />
+          }
+        />
+        <Route path="/matches" element={<MatchesView />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </AppContext.Provider>
   )
 }
@@ -114,16 +109,10 @@ function SwipeView({ attorneys, index, onSwipe, loading }) {
   const attorney = attorneys[index % attorneys.length]
   return (
     <div className="swipe-container">
-      <TinderCard
-        key={attorney.id}
-        onSwipe={(dir) => onSwipe(dir, attorney)}
-        preventSwipe={['up', 'down']}
-      >
-        <div className="card">
-          <h3>{attorney.name}</h3>
-          <p>{attorney.bio}</p>
-        </div>
-      </TinderCard>
+      <div className="card">
+        <h3>{attorney.name}</h3>
+        <p>{attorney.bio}</p>
+      </div>
     </div>
   )
 }
