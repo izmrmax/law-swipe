@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useSwipeable } from 'react-swipeable'
-import matchService from './matchservice'
-import ProfileCard from './profilecard'
+import * as matchService from '../services/matchSuggestionManager'; // Updated import
+import ProfileCard from './AttorneyProfileCard'; // Updated import
 
 const SwipeProfileCardStack = ({ profiles = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0)

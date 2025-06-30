@@ -1,5 +1,5 @@
-import apiClient from './apiclient';
-import aiClient from './aiClient';
+import { apiClient } from './authAxiosInstance'; // Corrected
+import aiClient from './aiClient'; // This file is currently missing
 
 const mutualListeners = new Set()
 

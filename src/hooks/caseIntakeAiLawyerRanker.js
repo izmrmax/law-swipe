@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react'
-import apiClient from './apiclient'
+import React, { useState, useRef, useCallback } from 'react';
+import { apiClient } from '../services/authAxiosInstance'; // Adjusted import path
 
 export function useCaseIntakeAiLawyerRanker() {
   const [rankedLawyerIds, setRankedLawyerIds] = useState([])

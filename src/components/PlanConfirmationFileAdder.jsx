@@ -1,3 +1,6 @@
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import PropTypes from 'prop-types';
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 
