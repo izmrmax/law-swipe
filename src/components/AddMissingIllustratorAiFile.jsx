@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import PropTypes from 'prop-types';
+
 function AddMissingAiFile({ uploadUrl, onSuccess, onError }) {
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');

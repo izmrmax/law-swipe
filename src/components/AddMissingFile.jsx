@@ -1,3 +1,6 @@
+import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
+
 const AddMissingFile = ({ documentType, existingFileName, onUpload }) => {
   const [selectedFile, setSelectedFile] = useState(null)
   const [error, setError] = useState('')

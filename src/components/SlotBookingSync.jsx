@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import apiClient from './apiclient';
+import { apiClient } from '../services/authAxiosInstance'; // Adjusted import path
 
 const getAvailability = async (lawyerId, signal) => {
   const response = await apiClient.get(`/booking/availability/${lawyerId}`, { signal });
