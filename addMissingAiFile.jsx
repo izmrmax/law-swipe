@@ -1,94 +1,76 @@
-const allowedMimeTypes = [
-  'application/pdf',
-  'text/plain',
-  'application/json',
-  'text/csv',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-]
+function AddMissingAiFile({ uploadUrl, onSuccess, onError }) {
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024
-
-function AddMissingAiFile({ onAdd, onCancel }) {
-  const [file, setFile] = useState(null)
-  const [error, setError] = useState('')
-  const fileInputRef = useRef(null)
-
-  const resetInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+  const handleFileChange = e => {
+    setError('');
+    const selected = e.target.files[0];
+    if (selected && selected.name.toLowerCase().endsWith('.ai')) {
+      setFile(selected);
+    } else {
+      setFile(null);
+      setError('Please select a valid .ai file');
     }
-  }
+  };
 
-  function handleFileChange(e) {
-    const selected = e.target.files && e.target.files[0]
-    if (!selected) {
-      setFile(null)
-      setError('')
-      return
-    }
-    if (!allowedMimeTypes.includes(selected.type)) {
-      setFile(null)
-      setError('Unsupported file type. Please upload PDF, TXT, JSON, CSV, DOC or DOCX.')
-      resetInput()
-      return
-    }
-    if (selected.size > MAX_FILE_SIZE) {
-      setFile(null)
-      setError('File size exceeds 5MB limit.')
-      resetInput()
-      return
-    }
-    setFile(selected)
-    setError('')
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault()
+  const handleSubmit = async e => {
+    e.preventDefault();
     if (!file) {
-      setError('Please select a valid file before submitting.')
-      return
+      setError('No file selected');
+      return;
     }
-    onAdd(file)
-  }
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      const data = await res.json();
+      setFile(null);
+      onSuccess(data);
+    } catch (err) {
+      const message = err.message || 'Upload error';
+      setError(message);
+      onError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <form className="add-ai-file-form" onSubmit={handleSubmit}>
-      <label htmlFor="ai-file-input">Upload AI File:</label>
+    <form className="add-missing-ai-file" onSubmit={handleSubmit}>
+      <label htmlFor="ai-file-input" className="file-label">
+        {file ? file.name : 'Select a .ai file'}
+      </label>
       <input
         id="ai-file-input"
         type="file"
-        accept=".pdf,.txt,.json,.csv,.doc,.docx"
+        accept=".ai"
         onChange={handleFileChange}
-        ref={fileInputRef}
+        className="file-input"
+        disabled={loading}
       />
-      {file && <p className="file-info">Selected file: {file.name}</p>}
-      {error && (
-        <p className="error-message" role="alert" aria-live="assertive">
-          {error}
-        </p>
-      )}
-      <div className="form-actions">
-        <button type="submit" disabled={!file}>
-          Add File
-        </button>
-        {onCancel && (
-          <button type="button" onClick={onCancel}>
-            Cancel
-          </button>
-        )}
-      </div>
+      {error && <div className="error-message">{error}</div>}
+      <button type="submit" disabled={loading} className="upload-button">
+        {loading ? 'Uploading...' : 'Upload'}
+      </button>
     </form>
-  )
+  );
 }
 
 AddMissingAiFile.propTypes = {
-  onAdd: PropTypes.func.isRequired,
-  onCancel: PropTypes.func
-}
+  uploadUrl: PropTypes.string.isRequired,
+  onSuccess: PropTypes.func,
+  onError: PropTypes.func,
+};
 
 AddMissingAiFile.defaultProps = {
-  onCancel: null
-}
+  onSuccess: () => {},
+  onError: () => {},
+};
 
-export default AddMissingAiFile
+export default AddMissingAiFile;
