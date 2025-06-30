@@ -1,123 +1,121 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import PropTypes from 'prop-types';
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 
-const PlanConfirmationFileAdder = ({
-  onFilesChange,
-  multiple,
-  maxFiles,
-  acceptedFileTypes
-}) => {
-  const [files, setFiles] = useState([]);
-  const previewsRef = useRef([]);
+const PlanConfirmationFileAdder = ({ onFilesChange }) => {
+  const [files, setFiles] = useState([])
+  const [errors, setErrors] = useState([])
+  const fileInputRef = useRef(null)
 
-  const isAccepted = file => {
-    return acceptedFileTypes.some(pattern => {
-      if (pattern.endsWith('/*')) {
-        const base = pattern.replace('/*', '/');
-        return file.type.startsWith(base);
+  const validateAndAdd = useCallback(
+    incomingFiles => {
+      const newFiles = []
+      const newErrors = []
+
+      Array.from(incomingFiles).forEach(file => {
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+          newErrors.push(`${file.name} has invalid file type.`)
+        } else if (file.size > MAX_FILE_SIZE) {
+          newErrors.push(`${file.name} exceeds maximum size of 5MB.`)
+        } else if (files.find(f => f.name === file.name && f.size === file.size)) {
+          newErrors.push(`${file.name} is already added.`)
+        } else if (newFiles.find(f => f.name === file.name && f.size === file.size)) {
+          newErrors.push(`${file.name} is duplicate in this selection.`)
+        } else {
+          newFiles.push(file)
+        }
+      })
+
+      if (newFiles.length) {
+        setFiles(prev => [...prev, ...newFiles])
       }
-      if (pattern.startsWith('.')) {
-        return file.name.toLowerCase().endsWith(pattern.toLowerCase());
-      }
-      return file.type === pattern;
-    });
-  };
+      setErrors(newErrors)
+    },
+    [files]
+  )
 
-  const handleFileInput = e => {
-    const selected = Array.from(e.target.files || []);
-    const valid = selected.filter(isAccepted);
-    const slots = multiple ? maxFiles - files.length : 1;
-    const toAdd = valid.slice(0, slots).map(file => {
-      const preview = URL.createObjectURL(file);
-      previewsRef.current.push(preview);
-      return {
-        id: uuidv4(),
-        file,
-        preview
-      };
-    });
-    const updated = multiple ? [...files, ...toAdd] : toAdd;
-    if (maxFiles && updated.length > maxFiles) {
-      updated.splice(maxFiles);
+  const handleFileSelect = e => {
+    validateAndAdd(e.target.files)
+    e.target.value = ''
+  }
+
+  const handleDrop = e => {
+    e.preventDefault()
+    validateAndAdd(e.dataTransfer.files)
+  }
+
+  const handleDragOver = e => {
+    e.preventDefault()
+  }
+
+  const handleRemove = index => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
     }
-    setFiles(updated);
-    onFilesChange(updated.map(f => f.file));
-    e.target.value = '';
-  };
-
-  const handleRemove = id => {
-    const updated = files.filter(item => {
-      if (item.id === id) {
-        URL.revokeObjectURL(item.preview);
-        previewsRef.current = previewsRef.current.filter(p => p !== item.preview);
-        return false;
-      }
-      return true;
-    });
-    setFiles(updated);
-    onFilesChange(updated.map(f => f.file));
-  };
+  }
 
   useEffect(() => {
-    return () => {
-      previewsRef.current.forEach(url => {
-        URL.revokeObjectURL(url);
-      });
-    };
-  }, []);
-
-  const isFull = maxFiles && files.length >= maxFiles;
+    onFilesChange(files)
+  }, [files, onFilesChange])
 
   return (
     <div className="plan-confirmation-file-adder">
-      <label className="file-adder-label">
-        {isFull ? `Maximum of ${maxFiles} files reached` : 'Add File'}
+      <div
+        className="file-drop-zone"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onClick={handleClick}
+      >
         <input
           type="file"
-          multiple={multiple}
-          accept={acceptedFileTypes.join(',')}
-          onChange={handleFileInput}
-          className="file-input"
-          disabled={isFull}
+          multiple
+          accept={ACCEPTED_TYPES.join(',')}
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
         />
-      </label>
-      {files.length > 0 && (
-        <ul className="file-list">
-          {files.map(({ id, file, preview }) => (
-            <li key={id} className="file-item">
-              {file.type.startsWith('image/') ? (
-                <img src={preview} alt={file.name} className="file-preview" />
-              ) : (
-                <span className="file-icon">?</span>
-              )}
-              <span className="file-name">{file.name}</span>
-              <button
-                type="button"
-                className="remove-button"
-                onClick={() => handleRemove(id)}
-              >
-                Remove
-              </button>
-            </li>
+        <p>Drag & drop files here, or click to select (PDF, JPG, PNG; max 5MB each)</p>
+      </div>
+
+      {errors.length > 0 && (
+        <ul className="file-errors">
+          {errors.map((err, idx) => (
+            <li key={idx}>{err}</li>
           ))}
         </ul>
       )}
+
+      {files.length > 0 && (
+        <ul className="file-list">
+          {files.map((file, idx) => {
+            const key = `${file.name}-${file.size}-${idx}`
+            return (
+              <li key={key} className="file-item">
+                <span className="file-name">{file.name}</span>
+                <span className="file-size">
+                  ({(file.size / 1024).toFixed(1)} KB)
+                </span>
+                <button
+                  type="button"
+                  className="file-remove-btn"
+                  onClick={() => handleRemove(idx)}
+                >
+                  Remove
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
-  );
-};
+  )
+}
 
 PlanConfirmationFileAdder.propTypes = {
-  onFilesChange: PropTypes.func.isRequired,
-  multiple: PropTypes.bool,
-  maxFiles: PropTypes.number,
-  acceptedFileTypes: PropTypes.arrayOf(PropTypes.string)
-};
+  onFilesChange: PropTypes.func.isRequired
+}
 
-PlanConfirmationFileAdder.defaultProps = {
-  multiple: true,
-  maxFiles: 5,
-  acceptedFileTypes: ['.pdf', 'image/*']
-};
-
-export default PlanConfirmationFileAdder;
+export default PlanConfirmationFileAdder
