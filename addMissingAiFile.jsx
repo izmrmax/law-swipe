@@ -1,160 +1,94 @@
-const AddMissingAiFile = ({ uploadUrl, onSuccess, onError }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [errorMessage, setErrorMessage] = useState('');
-  const fileInputRef = useRef(null);
+const allowedMimeTypes = [
+  'application/pdf',
+  'text/plain',
+  'application/json',
+  'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+]
 
-  const handleFileChange = e => {
-    setErrorMessage('');
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
-  const handleDrop = e => {
-    e.preventDefault();
-    setErrorMessage('');
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
+function AddMissingAiFile({ onAdd, onCancel }) {
+  const [file, setFile] = useState(null)
+  const [error, setError] = useState('')
+  const fileInputRef = useRef(null)
 
-  const handleDragOver = e => {
-    e.preventDefault();
-  };
-
-  const handleClickSelect = () => {
+  const resetInput = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.click();
+      fileInputRef.current.value = ''
     }
-  };
+  }
 
-  const handleKeyDown = e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClickSelect();
+  function handleFileChange(e) {
+    const selected = e.target.files && e.target.files[0]
+    if (!selected) {
+      setFile(null)
+      setError('')
+      return
     }
-  };
+    if (!allowedMimeTypes.includes(selected.type)) {
+      setFile(null)
+      setError('Unsupported file type. Please upload PDF, TXT, JSON, CSV, DOC or DOCX.')
+      resetInput()
+      return
+    }
+    if (selected.size > MAX_FILE_SIZE) {
+      setFile(null)
+      setError('File size exceeds 5MB limit.')
+      resetInput()
+      return
+    }
+    setFile(selected)
+    setError('')
+  }
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setErrorMessage('Please select a file first.');
-      return;
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!file) {
+      setError('Please select a valid file before submitting.')
+      return
     }
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      setUploading(true);
-      setProgress(0);
-      const response = await axios.post(uploadUrl, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: event => {
-          if (event.total) {
-            const percent = Math.round((event.loaded * 100) / event.total);
-            setProgress(percent);
-          }
-        }
-      });
-      setUploading(false);
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      setProgress(0);
-      if (onSuccess) {
-        onSuccess(response.data);
-      }
-    } catch (err) {
-      setUploading(false);
-      setErrorMessage(err.response?.data?.message || 'Upload failed.');
-      if (onError) {
-        onError(err);
-      }
-    }
-  };
+    onAdd(file)
+  }
 
   return (
-    <div className="add-missing-ai-file">
-      <div
-        className="drop-zone"
-        role="button"
-        tabIndex="0"
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onClick={handleClickSelect}
-        onKeyDown={handleKeyDown}
-        style={{
-          padding: '20px',
-          border: '2px dashed #ccc',
-          borderRadius: '6px',
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
-        {selectedFile ? (
-          <p>Selected file: {selectedFile.name}</p>
-        ) : (
-          <p>Drag & drop AI file here, or click to select.</p>
+    <form className="add-ai-file-form" onSubmit={handleSubmit}>
+      <label htmlFor="ai-file-input">Upload AI File:</label>
+      <input
+        id="ai-file-input"
+        type="file"
+        accept=".pdf,.txt,.json,.csv,.doc,.docx"
+        onChange={handleFileChange}
+        ref={fileInputRef}
+      />
+      {file && <p className="file-info">Selected file: {file.name}</p>}
+      {error && (
+        <p className="error-message" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
+      <div className="form-actions">
+        <button type="submit" disabled={!file}>
+          Add File
+        </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
         )}
-        <input
-          type="file"
-          accept=".json,.csv,.txt"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
       </div>
-      {errorMessage && (
-        <div className="error" style={{ color: 'red', marginTop: '8px' }}>
-          {errorMessage}
-        </div>
-      )}
-      {uploading && (
-        <div className="progress" style={{ marginTop: '8px' }}>
-          <div
-            className="progress-bar"
-            style={{
-              width: `${progress}%`,
-              height: '8px',
-              backgroundColor: '#4caf50'
-            }}
-          />
-          <p style={{ fontSize: '12px' }}>{progress}%</p>
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={handleUpload}
-        disabled={uploading}
-        style={{
-          marginTop: '12px',
-          padding: '10px 16px',
-          backgroundColor: '#007bff',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: uploading ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {uploading ? 'Uploading...' : 'Upload AI File'}
-      </button>
-    </div>
-  );
-};
+    </form>
+  )
+}
 
 AddMissingAiFile.propTypes = {
-  uploadUrl: PropTypes.string.isRequired,
-  onSuccess: PropTypes.func,
-  onError: PropTypes.func
-};
+  onAdd: PropTypes.func.isRequired,
+  onCancel: PropTypes.func
+}
 
 AddMissingAiFile.defaultProps = {
-  onSuccess: null,
-  onError: null
-};
+  onCancel: null
+}
 
-export default AddMissingAiFile;
+export default AddMissingAiFile
